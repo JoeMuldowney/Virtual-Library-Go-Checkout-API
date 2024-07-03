@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'gopipe' }
+    any agent
 
 
 environment {
@@ -17,7 +17,7 @@ stages {
         }
         stage('Build') {
                     steps {
-                        // Checkout source code
+
                         checkout scm
 
                         // Build Docker image
