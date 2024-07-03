@@ -1,5 +1,5 @@
 pipeline {
-    any agent
+    agent {label:"gopipe"}
 
 
     environment { DOCKERHUB_CREDENTIALS = d324a1f1-35d3-4aca-956a-334b18fb2852 }
