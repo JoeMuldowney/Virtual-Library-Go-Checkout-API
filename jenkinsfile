@@ -2,10 +2,8 @@ pipeline {
     any agent
 
 
-environment {
-       DOCKERHUB_CREDENTIALS = d324a1f1-35d3-4aca-956a-334b18fb2852
-}
-stages {
+    environment { DOCKERHUB_CREDENTIALS = d324a1f1-35d3-4aca-956a-334b18fb2852 }
+    stages {
 
         steps('Remove old build'){
             steps{
@@ -26,7 +24,6 @@ stages {
                 }
         stage('Push to Docker Hub') {
              steps {
-
                 withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]){
 
                     sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
@@ -44,6 +41,6 @@ stages {
                  steps {
                  sh 'docker run -d -p 8020:8020 --name Golibrarybackend joemuldowney/virtual_library_auth'
                  }
-
         }
+    }
 }
