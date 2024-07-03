@@ -28,7 +28,7 @@ func main() {
 	mux.HandleFunc("/updateshipping", shipping.UpdateShippingAddress)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8080", "http://localhost:3000", "http://localhost:8000"},
+		AllowedOrigins:   []string{"http://localhost:8020", "http://localhost:3000", "http://localhost:8000"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		Debug:            true,
@@ -37,7 +37,7 @@ func main() {
 	// Insert the middleware
 	handler := c.Handler(mux)
 
-	err := http.ListenAndServe(":8080", handler)
+	err := http.ListenAndServe(":8020", handler)
 	if err != nil {
 		return
 	}
