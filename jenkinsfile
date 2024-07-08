@@ -3,11 +3,12 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = '6056e3e4-1d9d-4240-8e14-48bf5ffea0b6'
-        DB_NAME = credentials('2fef0c53-32ee-4099-bbf6-c3b2722e572c')
-        DB_USER = credentials('0d5c1b71-fa2b-409d-a59d-019ece485a1a')
-        DB_PASS = credentials('95b75b27-550a-460a-8b9a-3c6f742b3e63')
-        DB_HOST = credentials('d35f73eb-6209-402a-8d48-3173464d25a9')
-        SECRET_KEY = credentials('4703708b-ce88-4e96-b358-4a19335d821b')
+        DB_NAME = credentials('18ed7c31-b94b-4d92-91c5-10c579cc891a')
+        DB_USER = credentials('e6c490fa-50ae-4035-9226-b1d827b45b04')
+        DB_PASS = credentials('da539aac-0948-486f-8d71-4fc0621d8ee8')
+        DB_HOST = credentials('d12d1899-2a91-45fc-af0c-952b689a231a')
+        DB_PORT = credentials('f34d3a07-14d9-4e5d-989a-9539993e440c')
+        SECRET_KEY = credentials('abeb979c-75c5-4acf-8c9c-2f6456fd75b0')
     }
 
     stages {
@@ -38,7 +39,13 @@ pipeline {
 
         stage('Deploy on server') {
             steps {
-                sh 'docker run -d -p 8020:8020 --name golibrarybackend joemuldowney/virtual_library_auth'
+                sh 'docker run -d -p 8020:8020 --name golibrarybackend \
+                -e DB_NAME=$DB_NAME \
+                                    -e DB_USER=$DB_USER \
+                                    -e DB_PASS=$DB_PASS \
+                                    -e DB_HOST=$DB_HOST \
+                                    -e SECRET_KEY=$SECRET_KEY \
+                                    joemuldowney/virtual_library_auth'
             }
         }
     }
