@@ -16,7 +16,7 @@ pipeline {
 
         stage('Remove old build'){
             steps{
-            // Stop and remove current docker container to free up space
+
                 sh 'docker ps -q --filter name=golibrarybackend | xargs -r docker stop'
                 sh 'docker ps -q --filter name=golibrarybackend | xargs -r docker rm'
                 sh 'docker system prune -af'
