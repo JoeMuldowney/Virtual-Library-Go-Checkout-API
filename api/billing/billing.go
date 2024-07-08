@@ -259,7 +259,7 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
 		return
 	}
-	// Parse the request body to get the new address data
+
 	var newCard Card
 	err = json.NewDecoder(r.Body).Decode(&newCard)
 	if err != nil {
