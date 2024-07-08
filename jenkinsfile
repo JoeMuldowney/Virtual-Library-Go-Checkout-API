@@ -1,5 +1,5 @@
 pipeline {
-    agent { label "gopipe"}
+    agent { label "GoNode"}
 
 
     environment { DOCKERHUB_CREDENTIALS = '6056e3e4-1d9d-4240-8e14-48bf5ffea0b6'
