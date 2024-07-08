@@ -41,7 +41,7 @@ func main() {
 	mux.HandleFunc("/verify", verifyHandler)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://18.218.222.138", "http://18.220.48.41"},
+		AllowedOrigins:   []string{"http://localhost", "http://18.218.222.138", "http://18.220.48.41:3000", "http://18.220.48.41:8000"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		Debug:            true,
