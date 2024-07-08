@@ -1,55 +1,45 @@
 pipeline {
-    agent { label "GoNode"}
+    agent { label "GoNode" }
 
-
-    environment { DOCKERHUB_CREDENTIALS = '6056e3e4-1d9d-4240-8e14-48bf5ffea0b6'
-            DB_NAME = credentials('2fef0c53-32ee-4099-bbf6-c3b2722e572c')
-            DB_USER = credentials('0d5c1b71-fa2b-409d-a59d-019ece485a1a')
-            DB_PASS = credentials('95b75b27-550a-460a-8b9a-3c6f742b3e63')
-            DB_HOST = credentials('d35f73eb-6209-402a-8d48-3173464d25a9')
-            SECRET_KEY = credentials('4703708b-ce88-4e96-b358-4a19335d821b')
-
-
-
+    environment {
+        DOCKERHUB_CREDENTIALS = '6056e3e4-1d9d-4240-8e14-48bf5ffea0b6'
+        DB_NAME = credentials('2fef0c53-32ee-4099-bbf6-c3b2722e572c')
+        DB_USER = credentials('0d5c1b71-fa2b-409d-a59d-019ece485a1a')
+        DB_PASS = credentials('95b75b27-550a-460a-8b9a-3c6f742b3e63')
+        DB_HOST = credentials('d35f73eb-6209-402a-8d48-3173464d25a9')
+        SECRET_KEY = credentials('4703708b-ce88-4e96-b358-4a19335d821b')
     }
+
     stages {
-
-        stage('Remove old build'){
-            steps{
-
+        stage('Remove old build') {
+            steps {
                 sh 'docker ps -q --filter name=golibrarybackend | xargs -r docker stop'
                 sh 'docker ps -q --filter name=golibrarybackend | xargs -r docker rm'
                 sh 'docker system prune -af'
             }
         }
+
         stage('Build') {
-                    steps {
+            steps {
+                checkout scm
+                sh 'docker build -t golibrarybackend .'
+            }
+        }
 
-                        checkout scm
-
-                        // Build Docker image
-                        sh 'docker build -t golibrarybackend .'
-                    }
-                }
         stage('Push to Docker Hub') {
-             steps {
-                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]){
-
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                     sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
-
-                    // Tag Docker image
                     sh 'docker tag golibrarybackend joemuldowney/virtual_library_cart'
-
-                    // Push Docker image to Docker Hub
                     sh 'docker push joemuldowney/virtual_library_cart'
                 }
-             }
+            }
         }
-        stage('deploy on server'){
 
-                 steps {
-                 sh 'docker run -d -p 8020:8020 --name golibrarybackend joemuldowney/virtual_library_auth'
-                 }
+        stage('Deploy on server') {
+            steps {
+                sh 'docker run -d -p 8020:8020 --name golibrarybackend joemuldowney/virtual_library_auth'
+            }
         }
     }
 }
