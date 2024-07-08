@@ -58,7 +58,7 @@ func AddCard(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -130,7 +130,7 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	var billingCard Card
-	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code FROM payment WHERE user_id=? AND pay_default=?", userId, 1)
+	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code FROM payment WHERE user_id=$1 AND pay_default=$2", userId, 1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -204,7 +204,7 @@ func GetAllCard(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 	var card []Card
 
-	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date FROM payment WHERE user_id=?", userId)
+	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date FROM payment WHERE user_id=$1", userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -275,7 +275,7 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt2, err := db.Prepare("UPDATE payment SET pay_default=? WHERE user_id=? AND pay_default=?")
+	stmt2, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE user_id=$2 AND pay_default=$3")
 
 	_, err = stmt2.Exec(false, userId, newCard.PayDefault)
 	if err != nil {
@@ -283,7 +283,7 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stmt, err := db.Prepare("UPDATE payment SET pay_default=? WHERE id=? AND user_id=?")
+	stmt, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE id=$2 AND user_id=$3")
 
 	_, err = stmt.Exec(newCard.PayDefault, newCard.Id, userId)
 	if err != nil {

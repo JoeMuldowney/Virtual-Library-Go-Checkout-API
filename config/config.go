@@ -3,7 +3,9 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"log"
 	"os"
 	"strconv"
 )
@@ -18,11 +20,11 @@ var (
 )
 
 func init() {
-	// Load environment variables from .env file
-	//err := godotenv.Load()
-	//if err != nil {
-	//	log.Fatalf("Error loading .env file")
-	//}
+	//Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
 	// Get environment variables
 	serverName = os.Getenv("DB_HOST")
@@ -41,12 +43,12 @@ func getEnvAsInt(name string, defaultVal int) int {
 	return defaultVal
 }
 func GetConnectionString() string {
-	return fmt.Sprintf("server=%s;user=%s;password=%s;database=%s;port=%d",
-		serverName, username, password, databaseName, port)
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
+		serverName, port, username, password, databaseName)
 }
 
 func OpenConnection(connectionString string) (*sql.DB, error) {
-	db, err := sql.Open("mssql", connectionString)
+	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
 	}

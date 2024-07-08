@@ -43,7 +43,7 @@ func AddAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO shipping (first_name, last_name,  street, city, state, zip_code, ship_default, user_id) VALUES (?,?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO shipping (first_name, last_name,  street, city, state, zip_code, ship_default, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -79,7 +79,7 @@ func GetAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	var shippingAddress Address
-	rows, err := db.Query("SELECT first_name, last_name, street, city, state, zip_code FROM shipping WHERE user_id=? AND ship_default=?", userId, 1)
+	rows, err := db.Query("SELECT first_name, last_name, street, city, state, zip_code FROM shipping WHERE user_id=$1 AND ship_default=$2", userId, 1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -125,7 +125,7 @@ func GetAllAddress(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 	var shippingAddress []Address
 
-	rows, err := db.Query("SELECT id, first_name, last_name, street, city, state, zip_code, ship_default FROM shipping WHERE user_id=?", userId)
+	rows, err := db.Query("SELECT id, first_name, last_name, street, city, state, zip_code, ship_default FROM shipping WHERE user_id=$1", userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,7 +179,7 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt2, err := db.Prepare("UPDATE shipping SET ship_default=? WHERE user_id=? AND ship_default=?")
+	stmt2, err := db.Prepare("UPDATE shipping SET ship_default=$1 WHERE user_id=$2 AND ship_default=$3")
 
 	_, err = stmt2.Exec(false, userId, newAddress.DefaultAddress)
 	if err != nil {
@@ -187,7 +187,7 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stmt, err := db.Prepare("UPDATE shipping SET ship_default=? WHERE id=? AND user_id=?")
+	stmt, err := db.Prepare("UPDATE shipping SET ship_default=$1 WHERE id=$2 AND user_id=$3")
 
 	_, err = stmt.Exec(newAddress.DefaultAddress, newAddress.Id, userId)
 	if err != nil {

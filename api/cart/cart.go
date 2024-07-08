@@ -42,7 +42,7 @@ func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = ?", user)
+	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = $1", user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -107,7 +107,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT * FROM cart where book_id = ? AND user_id = ? ", bookId, userId)
+	rows, err := db.Query("SELECT * FROM cart where book_id = $1 AND user_id = $2", bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -154,7 +154,7 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("DELETE FROM cart WHERE book_id = ? AND user_id = ?")
+	stmt, err := db.Prepare("DELETE FROM cart WHERE book_id = $1 AND user_id = $2")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -186,7 +186,7 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("DELETE FROM cart WHERE user_id = ?")
+	stmt, err := db.Prepare("DELETE FROM cart WHERE user_id = $1")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -227,7 +227,7 @@ func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("INSERT INTO cart(user_id, book_id, book_title, quantity, format, purchase_type, cost) VALUES(?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO cart(user_id, book_id, book_title, quantity, format, purchase_type, cost) VALUES($1,$2,$3,$4,$5,$6,$7)")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -271,7 +271,7 @@ func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("UPDATE cart SET quantity=?, format=?, purchase_type=?, cost=? WHERE book_id = ? AND user_id = ?")
+	stmt, err := db.Prepare("UPDATE cart SET quantity=$1, format=$2, purchase_type=$3, cost=$4 WHERE book_id = $5 AND user_id = $6")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
