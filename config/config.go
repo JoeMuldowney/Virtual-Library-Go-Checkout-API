@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/joho/godotenv"
-	"log"
 	"os"
 	"strconv"
 )
@@ -21,17 +19,17 @@ var (
 
 func init() {
 	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+	//err := godotenv.Load()
+	//if err != nil {
+	//	log.Fatalf("Error loading .env file")
+	//}
 
 	// Get environment variables
 	serverName = os.Getenv("DB_HOST")
 	username = os.Getenv("DB_USER")
 	password = os.Getenv("DB_PASSWORD")
 	databaseName = os.Getenv("DB_NAME")
-	port = getEnvAsInt("DB_PORT", 1433)
+	port = getEnvAsInt("DB_PORT", 5432)
 	secretKey = os.Getenv("SECRET_KEY")
 }
 
