@@ -296,7 +296,7 @@ func Verify(w http.ResponseWriter, r *http.Request) (int, error) {
 		return 0, err
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8000/users/verify/", nil)
+	req, err := http.NewRequest("POST", "http://18.220.48.41:8000/users/verify/", nil)
 	if err != nil {
 		http.Error(w, "Error creating request", http.StatusInternalServerError)
 		return 0, err
