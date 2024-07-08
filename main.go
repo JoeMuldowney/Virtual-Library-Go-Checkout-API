@@ -6,7 +6,19 @@ import (
 	"awesomeProject/api/shipping"
 	"github.com/rs/cors"
 	"net/http"
+	"strconv"
 )
+
+// verifyHandler function to use in the server
+func verifyHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := cart.Verify(w, r)
+	if err != nil {
+		// Error has already been handled in Verify, so just return
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(strconv.Itoa(userId)))
+}
 
 func main() {
 
@@ -26,9 +38,10 @@ func main() {
 	mux.HandleFunc("/shipping", shipping.GetAddress)
 	mux.HandleFunc("/allshipping", shipping.GetAllAddress)
 	mux.HandleFunc("/updateshipping", shipping.UpdateShippingAddress)
+	mux.HandleFunc("/verify", verifyHandler)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8020", "http://18.218.222.138:8020", "http://18.220.48.41:3000", "http://18.220.48.41:8000", "http://18.220.48.41"},
+		AllowedOrigins:   []string{"http://localhost", "http://18.218.222.138", "http://18.220.48.41"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		Debug:            true,
