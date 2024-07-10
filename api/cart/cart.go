@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type UserCart struct {
@@ -140,12 +141,14 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 
 func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 
-	bookId := r.URL.Path[len("/delete/"):]
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+	// Parse the bookId and userId from the URL
+	parts := strings.Split(r.URL.Path[len("/delete/"):], "/")
+	if len(parts) < 2 {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
 		return
 	}
+	bookId := parts[0]
+	userId := parts[1]
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -173,9 +176,10 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := Verify(w, r)
+	userId := r.URL.Path[len("/deleteall/"):]
+	userIdInt, err := strconv.Atoi(userId)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
@@ -193,7 +197,7 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stmt.Close()
 	// Execute the SQL statement
-	_, err = stmt.Exec(userId)
+	_, err = stmt.Exec(userIdInt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -205,21 +209,14 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
-
 	// Parse the request body to get the cart item data
 	var newItem UserCart
-	err = json.NewDecoder(r.Body).Decode(&newItem)
+	err := json.NewDecoder(r.Body).Decode(&newItem)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	newItem.UserId = userId
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -247,23 +244,18 @@ func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 
-	bookID := r.URL.Path[len("/cartupdate/"):]
-	fmt.Println("Book ID:", bookID)
-
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	// Parse the bookId and userId from the URL
+	bookId := r.URL.Path[len("/cartupdate/"):]
 
 	// Parse the request body to get the cart item data
 	var updateItem UserCart
-	err = json.NewDecoder(r.Body).Decode(&updateItem)
+	err := json.NewDecoder(r.Body).Decode(&updateItem)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	userId := updateItem.UserId
+	fmt.Println(userId)
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -278,7 +270,7 @@ func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stmt.Close()
 	// Execute the SQL statement
-	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookID, userId)
+	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -296,7 +288,7 @@ func Verify(w http.ResponseWriter, r *http.Request) (int, error) {
 		return 0, err
 	}
 
-	req, err := http.NewRequest("POST", "http://18.220.48.41:8000/users/verify/", nil)
+	req, err := http.NewRequest("POST", "http://localhost:8000/users/verify/", nil)
 	if err != nil {
 		http.Error(w, "Error creating request", http.StatusInternalServerError)
 		return 0, err

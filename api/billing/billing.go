@@ -1,7 +1,6 @@
 package billing
 
 import (
-	"awesomeProject/api/cart"
 	"awesomeProject/config"
 	"crypto/aes"
 	"crypto/cipher"
@@ -28,25 +27,85 @@ type Card struct {
 	UserId      int    `json:"user_id"`
 }
 
-func AddCard(w http.ResponseWriter, r *http.Request) {
+func AddMembershipCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
 	var addCard Card
-	err = json.NewDecoder(r.Body).Decode(&addCard)
+	err := json.NewDecoder(r.Body).Decode(&addCard)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	addCard.UserId = userId
-	addCard.PayDefault = false
-
+	connectionString := config.GetConnectionString()
+	db, err := config.OpenConnection(connectionString)
 	if err != nil {
-		http.Error(w, "Encryption error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer stmt.Close()
+	eFirstName, err := Encrypt(addCard.FirstName, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eLastName, err := Encrypt(addCard.LastName, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eCardNum, err := Encrypt(addCard.CardNum, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	ePaymentType, err := Encrypt(addCard.PaymentType, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eExpDate, err := Encrypt(addCard.ExpDate, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eStreet, err := Encrypt(addCard.Street, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eCity, err := Encrypt(addCard.City, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eState, err := Encrypt(addCard.State, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eZip, err := Encrypt(addCard.State, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// Execute the SQL statement
+	_, err = stmt.Exec(eFirstName, eLastName, eCardNum, ePaymentType, eExpDate, eStreet, eCity, eState, eZip, addCard.PayDefault, addCard.UserId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Write success response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "card inserted successfully")
+}
+
+func AddCard(w http.ResponseWriter, r *http.Request) {
+
+	var addCard Card
+	err := json.NewDecoder(r.Body).Decode(&addCard)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -116,11 +175,7 @@ func AddCard(w http.ResponseWriter, r *http.Request) {
 
 func GetCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	userId := r.URL.Path[len("/billing/"):]
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -189,11 +244,7 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 }
 func GetAllCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	userId := r.URL.Path[len("/allcard/"):]
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -254,14 +305,10 @@ func GetAllCard(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	userId := r.URL.Path[len("/updatecard/"):]
 
 	var newCard Card
-	err = json.NewDecoder(r.Body).Decode(&newCard)
+	err := json.NewDecoder(r.Body).Decode(&newCard)
 	if err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return

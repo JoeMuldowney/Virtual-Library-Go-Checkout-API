@@ -65,11 +65,7 @@ func AddAddress(w http.ResponseWriter, r *http.Request) {
 
 func GetAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	userId := r.URL.Path[len("/shipping/"):]
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -110,12 +106,7 @@ func GetAddress(w http.ResponseWriter, r *http.Request) {
 }
 func GetAllAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
-
+	userId := r.URL.Path[len("/allshipping/"):]
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -158,14 +149,10 @@ func GetAllAddress(w http.ResponseWriter, r *http.Request) {
 
 func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
+	userId := r.URL.Path[len("/updateshipping/"):]
 	// Parse the request body to get the new address data
 	var newAddress Address
-	err = json.NewDecoder(r.Body).Decode(&newAddress)
+	err := json.NewDecoder(r.Body).Decode(&newAddress)
 	if err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
