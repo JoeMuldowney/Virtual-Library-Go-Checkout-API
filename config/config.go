@@ -28,7 +28,7 @@ func init() {
 	// Get environment variables
 	serverName = os.Getenv("DB_HOST")
 	username = os.Getenv("DB_USER")
-	password = os.Getenv("DB_PASSWORD")
+	password = os.Getenv("DB_PASS")
 	databaseName = os.Getenv("DB_NAME")
 	port = getEnvAsInt("DB_PORT", 5432)
 	secretKey = os.Getenv("SECRET_KEY")
