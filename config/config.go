@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"log"
 	"os"
 	"strconv"
 )
@@ -46,12 +47,35 @@ func GetConnectionString() string {
 }
 
 func OpenConnection(connectionString string) (*sql.DB, error) {
+	// Log the connection string (without the password)
+	log.Printf("Connecting to DB with connection string: host=%s port=%d user=%s dbname=%s",
+		serverName, port, username, databaseName)
+
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
+		log.Fatalf("Error opening the database connection: %v", err)
 		return nil, err
 	}
+
+	// Verify the connection
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("Error verifying the database connection: %v", err)
+		return nil, err
+	}
+
+	log.Println("Successfully connected to the database")
 	return db, nil
 }
+
+//func OpenConnection(connectionString string) (*sql.DB, error) {
+//	db, err := sql.Open("postgres", connectionString)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return db, nil
+//}
+
 func GetSecretKey() string {
 	return secretKey
 }
