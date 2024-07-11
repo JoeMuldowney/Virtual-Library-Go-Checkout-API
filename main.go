@@ -35,7 +35,6 @@ func main() {
 		Debug:            true,
 	})
 
-	// Insert the middleware
 	handler := c.Handler(mux)
 
 	err := http.ListenAndServe(":8020", handler)
