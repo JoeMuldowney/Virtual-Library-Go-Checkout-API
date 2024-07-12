@@ -1,11 +1,11 @@
 package shipping
 
 import (
-	"awesomeProject/api/cart"
 	"awesomeProject/config"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 type Address struct {
@@ -22,11 +22,21 @@ type Address struct {
 
 func AddAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
 		return
 	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
+
 	var addAddress Address
 	err = json.NewDecoder(r.Body).Decode(&addAddress)
 	if err != nil {
@@ -65,7 +75,20 @@ func AddAddress(w http.ResponseWriter, r *http.Request) {
 
 func GetAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/shipping/"):]
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -106,7 +129,20 @@ func GetAddress(w http.ResponseWriter, r *http.Request) {
 }
 func GetAllAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/allshipping/"):]
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -149,10 +185,29 @@ func GetAllAddress(w http.ResponseWriter, r *http.Request) {
 
 func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/updateshipping/"):]
+	userIdStr := r.URL.Query().Get("user")
+	idStr := r.URL.Query().Get("id")
+
+	fmt.Println("Received userId:", userIdStr)
+	fmt.Println("Received id:", idStr)
+	if userIdStr == "" || idStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		return
+	}
 	// Parse the request body to get the new address data
 	var newAddress Address
-	err := json.NewDecoder(r.Body).Decode(&newAddress)
+	err = json.NewDecoder(r.Body).Decode(&newAddress)
 	if err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
@@ -168,15 +223,15 @@ func UpdateShippingAddress(w http.ResponseWriter, r *http.Request) {
 
 	stmt2, err := db.Prepare("UPDATE shipping SET ship_default=$1 WHERE user_id=$2 AND ship_default=$3")
 
-	_, err = stmt2.Exec(false, userId, newAddress.DefaultAddress)
+	_, err = stmt2.Exec(false, userId, true)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println("Change id to:", id)
 	stmt, err := db.Prepare("UPDATE shipping SET ship_default=$1 WHERE id=$2 AND user_id=$3")
 
-	_, err = stmt.Exec(newAddress.DefaultAddress, newAddress.Id, userId)
+	_, err = stmt.Exec(true, id, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

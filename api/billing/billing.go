@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Card struct {
@@ -175,7 +176,20 @@ func AddCard(w http.ResponseWriter, r *http.Request) {
 
 func GetCard(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/billing/"):]
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -222,6 +236,7 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	fmt.Println("last four:", ending)
 	billingCard.CardNum = ending
 	billingCard.FirstName = dFirstName
 	billingCard.PaymentType = dPaymentType
@@ -244,7 +259,20 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 }
 func GetAllCard(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/allcard/"):]
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -305,10 +333,29 @@ func GetAllCard(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/updatecard/"):]
+	userIdStr := r.URL.Query().Get("user")
+	idStr := r.URL.Query().Get("id")
+
+	fmt.Println("Received userId:", userIdStr)
+	fmt.Println("Received id:", idStr)
+	if userIdStr == "" || idStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		return
+	}
 
 	var newCard Card
-	err := json.NewDecoder(r.Body).Decode(&newCard)
+	err = json.NewDecoder(r.Body).Decode(&newCard)
 	if err != nil {
 		http.Error(w, "Error parsing request body", http.StatusBadRequest)
 		return
@@ -324,7 +371,7 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 
 	stmt2, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE user_id=$2 AND pay_default=$3")
 
-	_, err = stmt2.Exec(false, userId, newCard.PayDefault)
+	_, err = stmt2.Exec(false, userId, true)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -332,7 +379,7 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 
 	stmt, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE id=$2 AND user_id=$3")
 
-	_, err = stmt.Exec(newCard.PayDefault, newCard.Id, userId)
+	_, err = stmt.Exec(true, id, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -394,5 +441,9 @@ func Decrypt(cipherText, key string) (string, error) {
 }
 
 func lastFour(s string) string {
-	return s[len(s)-4:]
+	if len(s) >= 4 {
+		return s[len(s)-4:]
+	}
+	// Handle the case where the string is too short
+	return s // Or return an appropriate default value
 }

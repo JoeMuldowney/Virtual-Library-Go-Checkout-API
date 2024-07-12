@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type UserCart struct {
@@ -29,9 +28,18 @@ type Checkout struct {
 
 func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 
-	user, err := Verify(w, r)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -43,7 +51,7 @@ func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = $1", user)
+	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = $1", userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -89,17 +97,29 @@ func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
 }
-
 func GetCartBook(w http.ResponseWriter, r *http.Request) {
 
-	bookId := r.URL.Path[len("/data/"):]
-	fmt.Println("Book ID:", bookId)
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+	bookIdStr := r.URL.Query().Get("id")
+	userIdStr := r.URL.Query().Get("user")
+	fmt.Println("Received bookId:", bookIdStr)
+	fmt.Println("Received userId:", userIdStr)
+
+	if bookIdStr == "" || userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
 		return
 	}
 
+	bookId, err := strconv.Atoi(bookIdStr)
+	if err != nil {
+		http.Error(w, "Invalid bookId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 
@@ -141,14 +161,27 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 
 func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 
-	// Parse the bookId and userId from the URL
-	parts := strings.Split(r.URL.Path[len("/delete/"):], "/")
-	if len(parts) < 2 {
-		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+	bookIdStr := r.URL.Query().Get("id")
+	userIdStr := r.URL.Query().Get("user")
+	fmt.Println("Received bookId:", bookIdStr)
+	fmt.Println("Received userId:", userIdStr)
+
+	if bookIdStr == "" || userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
 		return
 	}
-	bookId := parts[0]
-	userId := parts[1]
+
+	bookId, err := strconv.Atoi(bookIdStr)
+	if err != nil {
+		http.Error(w, "Invalid bookId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -176,10 +209,13 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 
-	userId := r.URL.Path[len("/deleteall/"):]
-	userIdInt, err := strconv.Atoi(userId)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -197,7 +233,7 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stmt.Close()
 	// Execute the SQL statement
-	_, err = stmt.Exec(userIdInt)
+	_, err = stmt.Exec(userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
