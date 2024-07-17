@@ -25,7 +25,6 @@ func init() {
 	//	log.Fatalf("Error loading .env file")
 	//}
 
-	// Get environment variables
 	serverName = os.Getenv("DB_HOST")
 	username = os.Getenv("DB_USER")
 	password = os.Getenv("DB_PASS")
