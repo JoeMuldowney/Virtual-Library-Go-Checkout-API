@@ -3,12 +3,12 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = '6056e3e4-1d9d-4240-8e14-48bf5ffea0b6'
-        DB_NAME = credentials('810400aa-d4f0-4b9c-9921-3dc18bc1b775')
-        DB_USER = credentials('014e187e-d68b-497d-b75b-e6954d141c0a')
-        DB_PASS = credentials('73de1c18-1d33-4917-b054-17b9e852e3b6')
-        DB_HOST = credentials('99d36a86-ce4b-4a0c-9ec3-9af9a80e4acc')
-        DB_PORT = credentials('11c805e6-a9d9-4f7f-a37e-450b9c70665a')
-        SECRET_KEY = credentials('5db7ba70-428c-43cf-b351-6feee10f8f83')
+        DB_NAME = credentials('956d1bda-f0e7-44fc-a499-d6765ab21d9e')
+        DB_USER = credentials('e9250e70-3c28-427c-b60a-f0cf8ba2a8c7')
+        DB_PASS = credentials('9f557c8b-ad1a-40c6-a22f-d4456fea24c4')
+        DB_HOST = credentials('996763d4-65b6-4c30-b96a-d8a3e6bf0929')
+        DB_PORT = credentials('8110aaec-ed3a-412b-95ef-3d684241d435')
+        SECRET_KEY = credentials('c8ae8a6b-3e53-419a-9f34-ef157e476b5d')
     }
 
     stages {
