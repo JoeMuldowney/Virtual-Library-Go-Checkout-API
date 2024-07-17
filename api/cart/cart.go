@@ -196,7 +196,7 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer stmt.Close()
-	// Execute the SQL statement
+
 	_, err = stmt.Exec(bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
