@@ -29,7 +29,7 @@ func main() {
 	mux.HandleFunc("/go/updateshipping", shipping.UpdateShippingAddress)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://3.129.70.204", "http://18.220.48.41"},
+		AllowedOrigins:   []string{"http://localhost", "http://3.129.70.204", "http://18.220.48.41", "https://csjoeportfolio.com/"},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		Debug:            true,
