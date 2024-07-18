@@ -283,15 +283,15 @@ func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	// Parse the bookId and userId from the URL
 	bookId := r.URL.Path[len("/cartupdate/"):]
 
-	// Parse the request body to get the cart item data
 	var updateItem UserCart
 	err := json.NewDecoder(r.Body).Decode(&updateItem)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userId := updateItem.UserId
-	fmt.Println(userId)
+
+	fmt.Println(bookId)
+
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -306,7 +306,7 @@ func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer stmt.Close()
 	// Execute the SQL statement
-	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookId, userId)
+	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookId, updateItem.UserId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

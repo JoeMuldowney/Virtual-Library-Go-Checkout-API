@@ -3,6 +3,7 @@ package config
 import (
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"log"
 	"os"
@@ -20,10 +21,10 @@ var (
 
 func init() {
 	//Load environment variables from .env file
-	//err := godotenv.Load()
-	//if err != nil {
-	//	log.Fatalf("Error loading .env file")
-	//}
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
 	serverName = os.Getenv("DB_HOST")
 	username = os.Getenv("DB_USER")

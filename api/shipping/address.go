@@ -22,29 +22,13 @@ type Address struct {
 
 func AddAddress(w http.ResponseWriter, r *http.Request) {
 
-	userIdStr := r.URL.Query().Get("user")
-
-	fmt.Println("Received userId:", userIdStr)
-
-	if userIdStr == "" {
-		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
-		return
-	}
-
-	userId, err := strconv.Atoi(userIdStr)
-	if err != nil {
-		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
-		return
-	}
-
 	var addAddress Address
-	err = json.NewDecoder(r.Body).Decode(&addAddress)
+	err := json.NewDecoder(r.Body).Decode(&addAddress)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	addAddress.UserId = userId
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
