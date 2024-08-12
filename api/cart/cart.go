@@ -137,7 +137,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 	var cartItems []UserCart
 	for rows.Next() {
 		var item UserCart
-		if err := rows.Scan(&item.Id, &item.UserId, &item.BookId, &item.BookTitle, &item.Quantity, &item.PurchaseType, &item.Cost, &item.Format); err != nil {
+		if err := rows.Scan(&item.Id, &item.UserId, &item.BookId, &item.BookTitle, &item.Quantity, &item.Format, &item.PurchaseType, &item.Cost); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
