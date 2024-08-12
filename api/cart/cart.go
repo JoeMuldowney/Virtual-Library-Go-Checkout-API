@@ -128,7 +128,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT * FROM cart where book_id = $1 AND user_id = $2", bookId, userId)
+	rows, err := db.Query("SELECT book_title, quantity, format, purchase_type, cost FROM cart where book_id = $1 AND user_id = $2", bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -137,7 +137,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 	var cartItems []UserCart
 	for rows.Next() {
 		var item UserCart
-		if err := rows.Scan(&item.Id, &item.UserId, &item.BookId, &item.BookTitle, &item.Quantity, &item.Format, &item.PurchaseType, &item.Cost); err != nil {
+		if err := rows.Scan(&item.BookTitle, &item.Quantity, &item.Format, &item.PurchaseType, &item.Cost); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
