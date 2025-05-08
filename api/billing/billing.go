@@ -1,7 +1,6 @@
 package billing
 
 import (
-	"awesomeProject/api/cart"
 	"awesomeProject/config"
 	"crypto/aes"
 	"crypto/cipher"
@@ -11,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Card struct {
@@ -28,25 +28,12 @@ type Card struct {
 	UserId      int    `json:"user_id"`
 }
 
-func AddCard(w http.ResponseWriter, r *http.Request) {
+func AddMembershipCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
 	var addCard Card
-	err = json.NewDecoder(r.Body).Decode(&addCard)
+	err := json.NewDecoder(r.Body).Decode(&addCard)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	addCard.UserId = userId
-	addCard.PayDefault = false
-
-	if err != nil {
-		http.Error(w, "Encryption error", http.StatusInternalServerError)
 		return
 	}
 
@@ -58,7 +45,80 @@ func AddCard(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer stmt.Close()
+	eFirstName, err := Encrypt(addCard.FirstName, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eLastName, err := Encrypt(addCard.LastName, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eCardNum, err := Encrypt(addCard.CardNum, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	ePaymentType, err := Encrypt(addCard.PaymentType, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eExpDate, err := Encrypt(addCard.ExpDate, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eStreet, err := Encrypt(addCard.Street, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eCity, err := Encrypt(addCard.City, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eState, err := Encrypt(addCard.State, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	eZip, err := Encrypt(addCard.Zip, config.GetSecretKey())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// Execute the SQL statement
+	_, err = stmt.Exec(eFirstName, eLastName, eCardNum, ePaymentType, eExpDate, eStreet, eCity, eState, eZip, addCard.PayDefault, addCard.UserId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Write success response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "card inserted successfully")
+}
+
+func AddCard(w http.ResponseWriter, r *http.Request) {
+
+	var addCard Card
+	err := json.NewDecoder(r.Body).Decode(&addCard)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	connectionString := config.GetConnectionString()
+	db, err := config.OpenConnection(connectionString)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	stmt, err := db.Prepare("INSERT INTO payment (first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code, pay_default, user_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,9 +176,18 @@ func AddCard(w http.ResponseWriter, r *http.Request) {
 
 func GetCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -130,7 +199,7 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 	var billingCard Card
-	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code FROM payment WHERE user_id=? AND pay_default=?", userId, 1)
+	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date, street, city, state, zip_code FROM payment WHERE user_id=$1 AND pay_default=$2", userId, 1)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -167,6 +236,7 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	fmt.Println("last four:", ending)
 	billingCard.CardNum = ending
 	billingCard.FirstName = dFirstName
 	billingCard.PaymentType = dPaymentType
@@ -189,9 +259,18 @@ func GetCard(w http.ResponseWriter, r *http.Request) {
 }
 func GetAllCard(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -204,7 +283,7 @@ func GetAllCard(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 	var card []Card
 
-	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date FROM payment WHERE user_id=?", userId)
+	rows, err := db.Query("SELECT id, first_name, last_name, card_num, payment_type, exp_date FROM payment WHERE user_id=$1", userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -254,12 +333,27 @@ func GetAllCard(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := cart.Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+	userIdStr := r.URL.Query().Get("user")
+	idStr := r.URL.Query().Get("id")
+
+	fmt.Println("Received userId:", userIdStr)
+	fmt.Println("Received id:", idStr)
+	if userIdStr == "" || idStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
 		return
 	}
-	// Parse the request body to get the new address data
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid id parameter", http.StatusBadRequest)
+		return
+	}
+
 	var newCard Card
 	err = json.NewDecoder(r.Body).Decode(&newCard)
 	if err != nil {
@@ -275,17 +369,17 @@ func UpdateCardPayment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	stmt2, err := db.Prepare("UPDATE payment SET pay_default=? WHERE user_id=? AND pay_default=?")
+	stmt2, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE user_id=$2 AND pay_default=$3")
 
-	_, err = stmt2.Exec(false, userId, newCard.PayDefault)
+	_, err = stmt2.Exec(false, userId, true)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	stmt, err := db.Prepare("UPDATE payment SET pay_default=? WHERE id=? AND user_id=?")
+	stmt, err := db.Prepare("UPDATE payment SET pay_default=$1 WHERE id=$2 AND user_id=$3")
 
-	_, err = stmt.Exec(newCard.PayDefault, newCard.Id, userId)
+	_, err = stmt.Exec(true, id, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -347,5 +441,9 @@ func Decrypt(cipherText, key string) (string, error) {
 }
 
 func lastFour(s string) string {
-	return s[len(s)-4:]
+	if len(s) >= 4 {
+		return s[len(s)-4:]
+	}
+	// Handle the case where the string is too short
+	return s // Or return an appropriate default value
 }

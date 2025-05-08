@@ -1,0 +1,53 @@
+pipeline {
+    agent { label "Gonode" }
+
+    environment {
+        DOCKERHUB_CREDENTIALS = '5fd57e13-b6e6-45bd-a283-0a91b7c0b8d0'
+        DB_NAME = credentials('956d1bda-f0e7-44fc-a499-d6765ab21d9e')
+        DB_USER = credentials('e9250e70-3c28-427c-b60a-f0cf8ba2a8c7')
+        DB_PASS = credentials('9f557c8b-ad1a-40c6-a22f-d4456fea24c4')
+        DB_HOST = credentials('996763d4-65b6-4c30-b96a-d8a3e6bf0929')
+        DB_PORT = credentials('8110aaec-ed3a-412b-95ef-3d684241d435')
+        SECRET_KEY = credentials('c8ae8a6b-3e53-419a-9f34-ef157e476b5d')
+    }
+
+    stages {
+        stage('Remove old build') {
+            steps {
+                sh 'docker stop golibrarybackend || true'
+                sh 'docker rm golibrarybackend || true'
+                sh 'docker system prune -af'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                checkout scm
+                sh 'docker build -t golibrarybackend .'
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
+                    sh 'docker tag golibrarybackend joemuldowney/virtual_library_cart'
+                    sh 'docker push joemuldowney/virtual_library_cart'
+                }
+            }
+        }
+
+        stage('Deploy on server') {
+            steps {
+                sh 'docker run -d -p 8020:8020 --name golibrarybackend \
+                -e DB_NAME=$DB_NAME \
+                -e DB_USER=$DB_USER \
+                -e DB_PASS=$DB_PASS \
+                -e DB_PORT=$DB_PORT \
+                -e DB_HOST=$DB_HOST \
+                -e SECRET_KEY=$SECRET_KEY \
+                joemuldowney/virtual_library_cart'
+            }
+        }
+    }
+}

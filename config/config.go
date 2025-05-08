@@ -3,8 +3,7 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"log"
 	"os"
 	"strconv"
@@ -20,18 +19,17 @@ var (
 )
 
 func init() {
-	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+	//Load environment variables from .env file
+	//err := godotenv.Load()
+	//if err != nil {
+	//	log.Fatalf("Error loading .env file")
+	//}
 
-	// Get environment variables
 	serverName = os.Getenv("DB_HOST")
 	username = os.Getenv("DB_USER")
-	password = os.Getenv("DB_PASSWORD")
+	password = os.Getenv("DB_PASS")
 	databaseName = os.Getenv("DB_NAME")
-	port = getEnvAsInt("DB_PORT", 1433)
+	port = getEnvAsInt("DB_PORT", 5432)
 	secretKey = os.Getenv("SECRET_KEY")
 }
 
@@ -43,17 +41,40 @@ func getEnvAsInt(name string, defaultVal int) int {
 	return defaultVal
 }
 func GetConnectionString() string {
-	return fmt.Sprintf("server=%s;user=%s;password=%s;database=%s;port=%d",
-		serverName, username, password, databaseName, port)
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s",
+		serverName, port, username, password, databaseName)
 }
 
 func OpenConnection(connectionString string) (*sql.DB, error) {
-	db, err := sql.Open("mssql", connectionString)
+	// Log the connection string (without the password)
+	log.Printf("Connecting to DB with connection string: host=%s port=%d user=%s dbname=%s",
+		serverName, port, username, databaseName)
+
+	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
+		log.Fatalf("Error opening the database connection: %v", err)
 		return nil, err
 	}
+
+	// Verify the connection
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("Error verifying the database connection: %v", err)
+		return nil, err
+	}
+
+	log.Println("Successfully connected to the database")
 	return db, nil
 }
+
+//func OpenConnection(connectionString string) (*sql.DB, error) {
+//	db, err := sql.Open("postgres", connectionString)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return db, nil
+//}
+
 func GetSecretKey() string {
 	return secretKey
 }

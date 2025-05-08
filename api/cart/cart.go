@@ -28,9 +28,18 @@ type Checkout struct {
 
 func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 
-	user, err := Verify(w, r)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	if userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -42,7 +51,7 @@ func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = ?", user)
+	rows, err := db.Query("SELECT book_id, book_title, quantity, purchase_type, cost, format FROM cart WHERE user_id = $1", userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,17 +97,29 @@ func GetCheckOut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonData)
 }
-
 func GetCartBook(w http.ResponseWriter, r *http.Request) {
 
-	bookId := r.URL.Path[len("/data/"):]
-	fmt.Println("Book ID:", bookId)
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+	bookIdStr := r.URL.Query().Get("id")
+	userIdStr := r.URL.Query().Get("user")
+	fmt.Println("Received bookId:", bookIdStr)
+	fmt.Println("Received userId:", userIdStr)
+
+	if bookIdStr == "" || userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
 		return
 	}
 
+	bookId, err := strconv.Atoi(bookIdStr)
+	if err != nil {
+		http.Error(w, "Invalid bookId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
+		return
+	}
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 
@@ -107,7 +128,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	rows, err := db.Query("SELECT * FROM cart where book_id = ? AND user_id = ? ", bookId, userId)
+	rows, err := db.Query("SELECT book_title, quantity, format, purchase_type, cost FROM cart where book_id = $1 AND user_id = $2", bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,7 +137,7 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 	var cartItems []UserCart
 	for rows.Next() {
 		var item UserCart
-		if err := rows.Scan(&item.Id, &item.UserId, &item.BookId, &item.BookTitle, &item.Quantity, &item.PurchaseType, &item.Cost, &item.Format); err != nil {
+		if err := rows.Scan(&item.BookTitle, &item.Quantity, &item.Format, &item.PurchaseType, &item.Cost); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -140,10 +161,25 @@ func GetCartBook(w http.ResponseWriter, r *http.Request) {
 
 func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 
-	bookId := r.URL.Path[len("/delete/"):]
-	userId, err := Verify(w, r)
+	bookIdStr := r.URL.Query().Get("id")
+	userIdStr := r.URL.Query().Get("user")
+	fmt.Println("Received bookId:", bookIdStr)
+	fmt.Println("Received userId:", userIdStr)
+
+	if bookIdStr == "" || userIdStr == "" {
+		http.Error(w, "Missing id or userId parameter", http.StatusBadRequest)
+		return
+	}
+
+	bookId, err := strconv.Atoi(bookIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid bookId parameter", http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -154,13 +190,13 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("DELETE FROM cart WHERE book_id = ? AND user_id = ?")
+	stmt, err := db.Prepare("DELETE FROM cart WHERE book_id = $1 AND user_id = $2")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer stmt.Close()
-	// Execute the SQL statement
+
 	_, err = stmt.Exec(bookId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -173,9 +209,13 @@ func DeleteCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := Verify(w, r)
+	userIdStr := r.URL.Query().Get("user")
+
+	fmt.Println("Received userId:", userIdStr)
+
+	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
+		http.Error(w, "Invalid userId parameter", http.StatusBadRequest)
 		return
 	}
 
@@ -186,7 +226,7 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("DELETE FROM cart WHERE user_id = ?")
+	stmt, err := db.Prepare("DELETE FROM cart WHERE user_id = $1")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -205,21 +245,14 @@ func DeleteAllCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
-
 	// Parse the request body to get the cart item data
 	var newItem UserCart
-	err = json.NewDecoder(r.Body).Decode(&newItem)
+	err := json.NewDecoder(r.Body).Decode(&newItem)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	newItem.UserId = userId
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
 	if err != nil {
@@ -227,7 +260,7 @@ func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("INSERT INTO cart(user_id, book_id, book_title, quantity, format, purchase_type, cost) VALUES(?,?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO cart(user_id, book_id, book_title, quantity, format, purchase_type, cost) VALUES($1,$2,$3,$4,$5,$6,$7)")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -247,22 +280,17 @@ func SaveCartItem(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 
-	bookID := r.URL.Path[len("/cartupdate/"):]
-	fmt.Println("Book ID:", bookID)
+	// Parse the bookId and userId from the URL
+	bookId := r.URL.Path[len("/cartupdate/"):]
 
-	userId, err := Verify(w, r)
-	if err != nil {
-		http.Error(w, "Error retrieving user data", http.StatusInternalServerError)
-		return
-	}
-
-	// Parse the request body to get the cart item data
 	var updateItem UserCart
-	err = json.NewDecoder(r.Body).Decode(&updateItem)
+	err := json.NewDecoder(r.Body).Decode(&updateItem)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	fmt.Println(bookId)
 
 	connectionString := config.GetConnectionString()
 	db, err := config.OpenConnection(connectionString)
@@ -271,14 +299,14 @@ func UpdateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	stmt, err := db.Prepare("UPDATE cart SET quantity=?, format=?, purchase_type=?, cost=? WHERE book_id = ? AND user_id = ?")
+	stmt, err := db.Prepare("UPDATE cart SET quantity=$1, format=$2, purchase_type=$3, cost=$4 WHERE book_id = $5 AND user_id = $6")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer stmt.Close()
 	// Execute the SQL statement
-	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookID, userId)
+	_, err = stmt.Exec(updateItem.Quantity, updateItem.Format, updateItem.PurchaseType, updateItem.Cost, bookId, updateItem.UserId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
