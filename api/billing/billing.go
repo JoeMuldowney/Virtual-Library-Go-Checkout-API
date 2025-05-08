@@ -83,7 +83,7 @@ func AddMembershipCard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	eZip, err := Encrypt(addCard.State, config.GetSecretKey())
+	eZip, err := Encrypt(addCard.Zip, config.GetSecretKey())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

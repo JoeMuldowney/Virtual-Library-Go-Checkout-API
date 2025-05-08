@@ -15,7 +15,7 @@ type Address struct {
 	Street         string `json:"street"`
 	City           string `json:"city"`
 	State          string `json:"state"`
-	Zip            int    `json:"zip_code"`
+	Zip            string `json:"zip_code"`
 	DefaultAddress bool   `json:"ship_default"`
 	UserId         int    `json:"user_id"`
 }
